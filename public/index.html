@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+
+</head>
+<body>
+    <div id="messageArea"></div>
+    <input type="text" id="messageInput" placeholder="Enter your message">
+    <button id="sendMessageButton">Send Message</button>
+
+    <script>
+         const sockOptions = {
+             withCredentials: false
+        };
+
+        // const socket = new SockJS('http://localhost:8080/websocket', null, sockOptions )
+
+       
+    
+        const socket = new SockJS('https://koko-api.calmglobal.com/koko/websocket', null, sockOptions )
+       
+        const stompClient = Stomp.over(socket);
+
+       
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+
+           
+            stompClient.subscribe('/topic/public', function (message) {
+                console.log('Message received from WebSocket:', message.body);
+
+               
+                let receivedMessage;
+                try {
+                    receivedMessage = JSON.parse(message.body);
+                } catch (error) {
+                  
+                    receivedMessage = { from: "Server", content: message.body };
+                }
+
+                displayMessage(receivedMessage);
+            });
+        });
+
+       
+        function sendMessage(content) {
+            const message = {
+                from: 'Frontend', 
+                content: content,  
+                type: 'CHAT'       
+            };
+
+            stompClient.send('/app/chat.sendMessage', {}, JSON.stringify(message));
+        }
+
+        
+        function displayMessage(message) {
+            const messageArea = document.getElementById('messageArea');
+            const messageElement = document.createElement('p');
+            messageElement.textContent = `${message.from}: ${message.content}`;
+            messageArea.appendChild(messageElement);
+        }
+
+        
+        document.getElementById('sendMessageButton').addEventListener('click', () => {
+            const content = document.getElementById('messageInput').value;
+            sendMessage(content);
+        });
+
+    </script>
+</body>
+</html> 
